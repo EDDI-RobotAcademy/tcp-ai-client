@@ -1,9 +1,9 @@
 from user_defined_protocol.protocol import UserDefinedProtocolNumber
 
 
-class FudfJustForTestResponse:
+class LlamaTestResponse:
     def __init__(self, responseData):
-        self.protocolNumber = UserDefinedProtocolNumber.FIRST_USER_DEFINED_FUNCTION_FOR_TEST.value
+        self.protocolNumber = UserDefinedProtocolNumber.TCP_TEAM_LLAMA_TEST.value
 
         for key, value in responseData.items():
             setattr(self, key, value)
@@ -16,4 +16,4 @@ class FudfJustForTestResponse:
         return self.__dict__
 
     def __str__(self):
-        return f"FudfJustForTestResponse({self.__dict__})"
+        return f"LlamaTestResponse({self.__dict__})"

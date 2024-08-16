@@ -5,7 +5,22 @@ from langchain import PromptTemplate
 
 
 class LlamaTestRepositoryImpl(LlamaTestRepository):
+    __instance = None
+
     llm = Ollama(model="benedict/linkbricks-llama3.1-korean:8b", stop=["<|eot_id|>"])
+
+    def __new__(cls):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls)
+
+        return cls.__instance
+
+    @classmethod
+    def getInstance(cls):
+        if cls.__instance is None:
+            cls.__instance = cls()
+
+        return cls.__instance
 
     def generateText(self, userSendMessage):
         template = """

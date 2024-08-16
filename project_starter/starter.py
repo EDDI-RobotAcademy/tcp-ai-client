@@ -3,6 +3,8 @@ import sys
 
 import colorama
 
+from user_defined_protocol.register import UserDefinedProtocolRegister
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'template'))
 
 from template.client_socket.service.client_socket_service_impl import ClientSocketServiceImpl
@@ -15,12 +17,19 @@ from template.receiver.service.receiver_service_impl import ReceiverServiceImpl
 from template.thread_worker.service.thread_worker_service_impl import ThreadWorkerServiceImpl
 from template.transmitter.service.transmitter_service_impl import TransmitterServiceImpl
 from template.utility.color_print import ColorPrinter
+from template.request_generator.request_class_map import RequestClassMap
+from template.response_generator.response_class_map import ResponseClassMap
 
 DomainInitializer.initEachDomain()
+UserDefinedProtocolRegister.registerUserDefinedProtocol()
 
 
 if __name__ == "__main__":
     colorama.init(autoreset=True)
+
+    responseClassMapInstance = ResponseClassMap.getInstance()
+    requestClassMapInstance = RequestClassMap.getInstance()
+    requestClassMapInstance.printRequestClassMap()
 
     detectedOperatingSystem = OperatingSystemDetector.checkCurrentOperatingSystem()
     ColorPrinter.print_important_data("detectedOperatingSystem", detectedOperatingSystem)
@@ -34,7 +43,10 @@ if __name__ == "__main__":
     clientSocketService.connectToTargetHostUnitSuccess()
 
     transmitterService = TransmitterServiceImpl.getInstance()
+    transmitterService.requestToInjectUserDefinedResponseClassMapInstance(responseClassMapInstance)
+
     receiverService = ReceiverServiceImpl.getInstance()
+    receiverService.requestToInjectUserDefinedRequestClassMapInstance(requestClassMapInstance)
 
     commandAnalyzerService = CommandAnalyzerServiceImpl.getInstance()
     commandExecutorService = CommandExecutorServiceImpl.getInstance()
