@@ -21,3 +21,4 @@ class FudfServiceImpl(FudfService):
 
     def justForTest(self, *args, **kwargs):
         return self.__fudfRepository.justForTest(*args, **kwargs)
+    

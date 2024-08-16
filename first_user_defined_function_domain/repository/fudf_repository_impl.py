@@ -36,3 +36,4 @@ class FudfRepositoryImpl(FudfRepository):
             "simpleIntValue": simpleIntValue,
             "anotherStringValue": anotherStringValue
         }
+    
