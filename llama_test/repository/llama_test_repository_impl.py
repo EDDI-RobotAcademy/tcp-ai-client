@@ -34,7 +34,7 @@ class LlamaTestRepositoryImpl(LlamaTestRepository):
             <|start_header_id|>assistant<|end_header_id|>
         """
 
-        system_prompt = "You are a helpful assistant. Tell me in Korean whatever I talked."
+        system_prompt = "You are a helpful assistant."
         user_prompt = userSendMessage
 
         prompt = PromptTemplate(
@@ -44,4 +44,4 @@ class LlamaTestRepositoryImpl(LlamaTestRepository):
 
         response = self.llm(prompt.format(system_prompt=system_prompt, user_prompt=user_prompt))
 
-        return response
+        return { "generatedText": response }
