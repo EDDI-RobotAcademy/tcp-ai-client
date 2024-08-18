@@ -7,6 +7,12 @@ from first_user_defined_function_domain.service.response.fudf_just_for_test_resp
 from llama_test.service.llama_test_service_impl import LlamaTestServiceImpl
 from llama_test.service.request.llama_test_request import LlamaTestRequest
 from llama_test.service.response.llama_test_response import LlamaTestResponse
+from llama_three_test.service.llama_three_service_impl import LlamaThreeServiceImpl
+from llama_three_test.service.request.llama_three_request import LlamaThreeRequest
+from llama_three_test.service.response.llama_three_response import LlamaThreeResponse
+from openai_api_test.service.openai_api_test_service_impl import OpenaiApiTestServiceImpl
+from openai_api_test.service.request.openai_api_test_request import OpenaiApiTestRequest
+from openai_api_test.service.response.openai_api_test_response import OpenaiApiTestResponse
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'template'))
 
@@ -64,6 +70,52 @@ class UserDefinedProtocolRegister:
         )
 
     @staticmethod
+    def registerOpenaiApiTestProtocol():
+        customProtocolService = CustomProtocolServiceImpl.getInstance()
+        openaiApiTestService = OpenaiApiTestServiceImpl.getInstance()
+
+        requestClassMapInstance = RequestClassMap.getInstance()
+        requestClassMapInstance.addRequestClass(
+            UserDefinedProtocolNumber.TCP_TEAM_OPENAI_TEST,
+            OpenaiApiTestRequest
+        )
+
+        responseClassMapInstance = ResponseClassMap.getInstance()
+        responseClassMapInstance.addResponseClass(
+            UserDefinedProtocolNumber.TCP_TEAM_OPENAI_TEST,
+            OpenaiApiTestResponse
+        )
+
+        customProtocolService.registerCustomProtocol(
+            UserDefinedProtocolNumber.TCP_TEAM_OPENAI_TEST,
+            openaiApiTestService.letsChat
+        )
+
+    @staticmethod
+    def registerLlamaThreeTestProtocol():
+        customProtocolService = CustomProtocolServiceImpl.getInstance()
+        llamaThreeService = LlamaThreeServiceImpl.getInstance()
+
+        requestClassMapInstance = RequestClassMap.getInstance()
+        requestClassMapInstance.addRequestClass(
+            UserDefinedProtocolNumber.TCP_TEAM_LLAMA_THREE_TEST,
+            LlamaThreeRequest
+        )
+
+        responseClassMapInstance = ResponseClassMap.getInstance()
+        responseClassMapInstance.addResponseClass(
+            UserDefinedProtocolNumber.TCP_TEAM_LLAMA_THREE_TEST,
+            LlamaThreeResponse
+        )
+
+        customProtocolService.registerCustomProtocol(
+            UserDefinedProtocolNumber.TCP_TEAM_LLAMA_THREE_TEST,
+            llamaThreeService.letsChat
+        )
+
+    @staticmethod
     def registerUserDefinedProtocol():
         UserDefinedProtocolRegister.registerDefaultUserDefinedProtocol()
         UserDefinedProtocolRegister.registerLlamaTestProtocol()
+        UserDefinedProtocolRegister.registerOpenaiApiTestProtocol()
+        UserDefinedProtocolRegister.registerLlamaThreeTestProtocol()
