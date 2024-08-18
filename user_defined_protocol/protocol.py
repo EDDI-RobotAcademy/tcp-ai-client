@@ -6,6 +6,8 @@ class UserDefinedProtocolNumber(Enum):
     TCP_TEAM_LLAMA_TEST = 3
     TCP_TEAM_OPENAI_TEST = 4
 
+    TCP_TEAM_LLAMA_THREE_TEST = 6
+
     FIRST_USER_DEFINED_FUNCTION_FOR_TEST = 5
 
 
