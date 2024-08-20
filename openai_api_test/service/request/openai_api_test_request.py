@@ -20,4 +20,4 @@ class OpenaiApiTestRequest(BaseRequest):
         }
 
     def __str__(self):
-        return f"LlamaTestRequest(protocolNumber={self.__protocolNumber}, parameterList={self.parameterList})"
+        return f"OpenaiApiTestRequest(protocolNumber={self.__protocolNumber}, parameterList={self.parameterList})"
