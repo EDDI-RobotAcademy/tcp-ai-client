@@ -1,0 +1,16 @@
+[package]
+name = "task_executor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pyo3 = { version = "*", features = ["auto-initialize", "gil-refs"] }
+pyo3-asyncio = { version = "*", features = ["tokio-runtime"] }
+
+tokio = { version = "*", features = ["full"]}
+
+[build-dependencies]
+pyo3-build-config = "*"
+
+[package.metadata.pyo3]
+extension-module = false
