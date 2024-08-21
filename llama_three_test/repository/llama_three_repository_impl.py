@@ -1,4 +1,6 @@
-from transformers import AutoTokenizer
+import os
+
+from transformers import AutoTokenizer, AutoModel
 from llama_cpp import Llama
 
 from llama_three_test.repository.llama_three_repository import LlamaThreeRepository
@@ -7,11 +9,14 @@ from llama_three_test.repository.llama_three_repository import LlamaThreeReposit
 class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     __instance = None
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        "MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
+    currentPath = os.getcwd()
+    print(f"currentPath: {currentPath}")
 
+    modelPath = os.path.join(currentPath, "MLP-KTLim", "llama-3-Korean-Bllossom-8B-Q4_K_M.gguf")
+
+    tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
-        model_path="/Users/j213h/Downloads/llama-3-Korean-Bllossom-8B-Q4_K_M.gguf",
+        model_path=modelPath,
         n_ctx=512,
         n_gpu_layers=-1
     )
