@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-pyo3 = { version = "*", features = ["auto-initialize", "gil-refs"] }
-pyo3-asyncio = { version = "*", features = ["tokio-runtime"] }
+dotenv = "*"
+pyo3 = { version = "0.20.0", features = ["auto-initialize", "extension-module"] }
+pyo3-asyncio = { version = "0.20.0", features = ["tokio-runtime"] }
 
 tokio = { version = "*", features = ["full"]}
 
