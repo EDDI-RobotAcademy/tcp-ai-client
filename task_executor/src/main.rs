@@ -1,10 +1,52 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyModule, PyAny, PyList};
-use std::path::PathBuf;
-use std::env;
+use std::path::{Path, PathBuf};
+use std::{env, fs};
+
+fn add_subdirectories_to_pythonpath(root_path: &Path) -> String {
+    let mut paths = vec![root_path.to_path_buf()];  // 루트 디렉토리 추가
+
+    if let Ok(entries) = fs::read_dir(root_path) {
+        for entry in entries.filter_map(Result::ok) {
+            let path = entry.path();
+            if path.is_dir() {
+                paths.push(path.clone());
+                let sub_paths = add_subdirectories_to_pythonpath(&path);  // 재귀적으로 하위 디렉토리 탐색
+                paths.push(PathBuf::from(sub_paths));
+            }
+        }
+    }
+
+    // 경로를 콜론(:)으로 구분하여 하나의 문자열로 연결
+    paths.iter().map(|p| p.display().to_string()).collect::<Vec<String>>().join(":")
+}
 
 #[tokio::main]
 async fn main() -> PyResult<()> {
+    match env::current_dir() {
+        Ok(path) => println!("현재 작업 디렉토리: {}", path.display()),
+        Err(e) => println!("현재 작업 디렉토리 획득 실패: {}", e),
+    }
+
+    match env::current_exe() {
+        Ok(path) => println!("현재 구동 디렉토리: {}", path.display()),
+        Err(e) => println!("현재 구동 디렉토리 획득 실패: {}", e),
+    }
+
+    let argumentList: Vec<String> = env::args().collect();
+    println!("Received argumentList: {:?}", argumentList);
+
+    if argumentList.len() < 3 {
+        println!("사용 방법이 잘못 되었습니다!")
+    }
+
+    let packageName = &argumentList[1];
+    let functionName = &argumentList[2];
+    let parameterList = &argumentList[3];
+    println!("packageName: {}", packageName);
+    println!("functionName: {}", functionName);
+    println!("parameterList: {}", parameterList);
+
     // TOP_DIR 경로를 가져옴
     let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let top_dir = binding.parent().unwrap();
@@ -18,19 +60,7 @@ async fn main() -> PyResult<()> {
 
     // PYTHONPATH 설정
     let openai_api_test_path = top_dir.join("openai_api_test");
-    let openai_api_test_service_path = openai_api_test_path.join("service");
-    let openai_api_test_request_path = openai_api_test_service_path.join("request");
-    let openai_api_test_response_path = openai_api_test_service_path.join("response");
-    let openai_api_test_repository_path = openai_api_test_path.join("repository");
-
-    let pythonpath = format!(
-        "{}:{}:{}:{}:{}",
-        openai_api_test_path.display(),
-        openai_api_test_service_path.display(),
-        openai_api_test_request_path.display(),
-        openai_api_test_response_path.display(),
-        openai_api_test_repository_path.display()
-    );
+    let pythonpath = add_subdirectories_to_pythonpath(&openai_api_test_path);
     env::set_var("PYTHONPATH", &pythonpath);
 
     // sys.path 업데이트
