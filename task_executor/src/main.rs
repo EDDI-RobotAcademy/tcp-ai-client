@@ -56,17 +56,21 @@ async fn main() -> PyResult<()> {
     let env_path = top_dir.join(".env");
     dotenv::from_path(env_path).expect(".env file not found");
     let openai_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in .env file");
-    println!("OpenAI API Key: {}", openai_api_key);
 
     // PYTHONPATH 설정
     let openai_api_test_path = top_dir.join("openai_api_test");
+    println!("openai_api_test_path: {}", openai_api_test_path.display());
+
     let pythonpath = add_subdirectories_to_pythonpath(&openai_api_test_path);
+    println!("pythonpath: {}", pythonpath);
     env::set_var("PYTHONPATH", &pythonpath);
 
     // sys.path 업데이트
     Python::with_gil(|py| {
         let path = py.import("os")?.getattr("path")?;
-        let abspath = path.call_method1("abspath", ("..",))?;
+        // TODO: 홀로 실행하냐 연동해서 실행하냐에 따라 자동으로 분류되게 만들어야함 (일단 그냥 감)
+        // let abspath = path.call_method1("abspath", ("..",))?;
+        let abspath = path.call_method1("abspath", ("",))?;
 
         let sys = PyModule::import(py, "sys")?;
         let sys_path: &PyList = sys.getattr("path")?.downcast()?;
@@ -102,13 +106,16 @@ async fn main() -> PyResult<()> {
 
     // 결과를 처리하고 출력
     if let Ok(result) = result {
-        Python::with_gil(|py| -> PyResult<()> {
+        let message = Python::with_gil(|py| -> PyResult<String> {
             let message: String = result.as_ref(py).get_item("message")?.extract()?;
             println!("Result from Python: {}", message);
-            Ok(())
+            Ok(message)
         })?;
+
+        Ok(message)
     } else {
         eprintln!("Failed to execute Python coroutine.");
+        Ok("python coroutine 실행 실패!".to_string())
     }
 
     Ok(())
