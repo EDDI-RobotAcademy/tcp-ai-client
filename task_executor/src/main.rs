@@ -105,18 +105,18 @@ async fn main() -> PyResult<()> {
     });
 
     // 결과를 처리하고 출력
-    if let Ok(result) = result {
+    if let Ok(ref result) = result {
         let message = Python::with_gil(|py| -> PyResult<String> {
             let message: String = result.as_ref(py).get_item("message")?.extract()?;
             println!("Result from Python: {}", message);
             Ok(message)
         })?;
 
-        Ok(message)
+        println!("{}", message);
+
+        std::process::exit(0)
     } else {
         eprintln!("Failed to execute Python coroutine.");
-        Ok("python coroutine 실행 실패!".to_string())
+        std::process::exit(1)
     }
-
-    Ok(())
 }
