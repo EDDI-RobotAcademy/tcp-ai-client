@@ -112,7 +112,7 @@ async fn main() -> PyResult<()> {
             Ok(message)
         })?;
 
-        println!("{}", message);
+        println!("whatWeHaveToGetData:{}", message);
 
         std::process::exit(0)
     } else {
