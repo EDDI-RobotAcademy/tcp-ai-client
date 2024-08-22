@@ -20,4 +20,5 @@ class OpenaiApiTestServiceImpl(OpenaiApiTestService):
         return cls.__instance
 
     async def letsChat(self, userSendMessage):
+        print(f"letsChat was called!")
         return await self.__openaiApiTestRepositoryImpl.generateText(userSendMessage)

@@ -50,7 +50,9 @@ class OpenaiApiTestRepositoryImpl(OpenaiApiTestRepository):
                 response = await client.post(self.OPENAI_CHAT_COMPLETIONS_URL, headers=self.headers, json=data)
                 response.raise_for_status()
 
-                return response.json()['choices'][0]['message']['content'].strip()
+                return {
+                    "message": response.json()['choices'][0]['message']['content'].strip()
+                }
 
             except httpx.HTTPStatusError as e:
                 print(f"HTTP Error: {str(e)}")
