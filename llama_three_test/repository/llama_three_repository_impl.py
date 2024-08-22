@@ -16,7 +16,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
     tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
-        model_path="C:/Users/USER/Downloads/llama-3-Korean-Bllossom-8B-Q4_K_M.gguf",
+        model_path=modelPath,
         n_ctx=512,
         n_gpu_layers=-1
     )
