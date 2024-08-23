@@ -21,6 +21,7 @@ fn add_subdirectories_to_pythonpath(root_path: &Path) -> String {
     paths.iter().map(|p| p.display().to_string()).collect::<Vec<String>>().join(":")
 }
 
+// TODO: 일단 구동만 되게 만들 것이므로 구조는 개 주고 만든다.
 #[tokio::main]
 async fn main() -> PyResult<()> {
     match env::current_dir() {
@@ -40,10 +41,15 @@ async fn main() -> PyResult<()> {
         println!("사용 방법이 잘못 되었습니다!")
     }
 
-    let packageName = &argumentList[1];
-    let functionName = &argumentList[2];
-    let parameterList = &argumentList[3];
-    println!("packageName: {}", packageName);
+    let fullPackageName = &argumentList[1];
+    let basePackageName = &argumentList[2];
+    let className = &argumentList[3];
+    let functionName = &argumentList[4];
+    let parameterList = &argumentList[5];
+
+    println!("fullPackageName: {}", fullPackageName);
+    println!("basePackageName: {}", basePackageName);
+    println!("className: {}", className);
     println!("functionName: {}", functionName);
     println!("parameterList: {}", parameterList);
 
@@ -58,7 +64,9 @@ async fn main() -> PyResult<()> {
     let openai_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in .env file");
 
     // PYTHONPATH 설정
-    let openai_api_test_path = top_dir.join("openai_api_test");
+    // let openai_api_test_path = top_dir.join("openai_api_test");
+    let base_package_name: &str = &basePackageName;
+    let openai_api_test_path = top_dir.join(base_package_name);
     println!("openai_api_test_path: {}", openai_api_test_path.display());
 
     let pythonpath = add_subdirectories_to_pythonpath(&openai_api_test_path);
@@ -69,8 +77,8 @@ async fn main() -> PyResult<()> {
     Python::with_gil(|py| {
         let path = py.import("os")?.getattr("path")?;
         // TODO: 홀로 실행하냐 연동해서 실행하냐에 따라 자동으로 분류되게 만들어야함 (일단 그냥 감)
-        // let abspath = path.call_method1("abspath", ("..",))?;
-        let abspath = path.call_method1("abspath", ("",))?;
+        let abspath = path.call_method1("abspath", ("..",))?;
+        // let abspath = path.call_method1("abspath", ("",))?;
 
         let sys = PyModule::import(py, "sys")?;
         let sys_path: &PyList = sys.getattr("path")?.downcast()?;
@@ -81,19 +89,26 @@ async fn main() -> PyResult<()> {
         Ok::<(), PyErr>(())
     })?;
 
+    let full_package_name: &str = &fullPackageName;
     // 비동기 작업을 실행하기 위해 Python 코루틴을 Future로 변환
     let coroutine = Python::with_gil(|py| -> PyResult<Py<PyAny>> {
-        let openai_api_test_service_impl = PyModule::import(py, "openai_api_test.service.openai_api_test_service_impl")
+        // let openai_api_test_service_impl = PyModule::import(py, "openai_api_test.service.openai_api_test_service_impl")
+        //     .expect("Failed to import module");
+        let openai_api_test_service_impl = PyModule::import(py, full_package_name)
             .expect("Failed to import module");
 
         // OpenaiApiTestServiceImpl 클래스 가져오기
-        let service_impl_class = openai_api_test_service_impl.getattr("OpenaiApiTestServiceImpl")?;
+        // let service_impl_class = openai_api_test_service_impl.getattr("OpenaiApiTestServiceImpl")?;
+        let class_name: &str = &className;
+        let service_impl_class = openai_api_test_service_impl.getattr(class_name)?;
 
         // OpenaiApiTestServiceImpl.getInstance() 호출하여 싱글톤 인스턴스 얻기
         let service_instance = service_impl_class.call_method0("getInstance")?;
 
         // letsChat 메서드를 호출하여 코루틴을 반환
-        let coroutine = service_instance.call_method1("letsChat", ("Hello from Rust!",))?;
+        // let coroutine = service_instance.call_method1("letsChat", ("Hello from Rust!",))?;
+        let function_name: &str = &functionName;
+        let coroutine = service_instance.call_method1(function_name, (parameterList, ))?;
         Ok(coroutine.into())
     })?;
 
