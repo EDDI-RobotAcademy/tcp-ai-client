@@ -1,6 +1,9 @@
 import os
 import sys
 
+from extract_text_from_pdf_test.service.extract_text_from_pdf_service_impl import ExtractTextFromPdfServiceImpl
+from extract_text_from_pdf_test.service.request.extract_text_from_pdf_request import ExtractTextFromPdfRequest
+from extract_text_from_pdf_test.service.response.extract_text_from_pdf_response import ExtractTextFromPdfResponse
 from first_user_defined_function_domain.service.fudf_service_impl import FudfServiceImpl
 from first_user_defined_function_domain.service.request.fudf_just_for_test_request import FudfJustForTestRequest
 from first_user_defined_function_domain.service.response.fudf_just_for_test_response import FudfJustForTestResponse
@@ -114,8 +117,31 @@ class UserDefinedProtocolRegister:
         )
 
     @staticmethod
+    def registerExtractTextFromPdfTestProtocol():
+        customProtocolService = CustomProtocolServiceImpl.getInstance()
+        extractTextFromPdfService = ExtractTextFromPdfServiceImpl.getInstance()
+
+        requestClassMapInstance = RequestClassMap.getInstance()
+        requestClassMapInstance.addRequestClass(
+            UserDefinedProtocolNumber.TCP_TEAM_EXTRACT_TEXT_FROM_PDF_TEST,
+            ExtractTextFromPdfRequest
+        )
+
+        responseClassMapInstance = ResponseClassMap.getInstance()
+        responseClassMapInstance.addResponseClass(
+            UserDefinedProtocolNumber.TCP_TEAM_EXTRACT_TEXT_FROM_PDF_TEST,
+            ExtractTextFromPdfResponse
+        )
+
+        customProtocolService.registerCustomProtocol(
+            UserDefinedProtocolNumber.TCP_TEAM_EXTRACT_TEXT_FROM_PDF_TEST,
+            extractTextFromPdfService.extractTextFromPdf
+        )
+
+    @staticmethod
     def registerUserDefinedProtocol():
         UserDefinedProtocolRegister.registerDefaultUserDefinedProtocol()
         UserDefinedProtocolRegister.registerLlamaTestProtocol()
         UserDefinedProtocolRegister.registerOpenaiApiTestProtocol()
         UserDefinedProtocolRegister.registerLlamaThreeTestProtocol()
+        UserDefinedProtocolRegister.registerExtractTextFromPdfTestProtocol()
