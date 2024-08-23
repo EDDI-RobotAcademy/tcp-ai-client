@@ -37,8 +37,8 @@ async fn main() -> PyResult<()> {
     let argumentList: Vec<String> = env::args().collect();
     println!("Received argumentList: {:?}", argumentList);
 
-    if argumentList.len() < 3 {
-        println!("사용 방법이 잘못 되었습니다!")
+    if argumentList.len() == 5 {
+        println!("사용 방법이 잘못 되었습니다 -> 모듈 전체 경로, 베이스 모듈 이름, 클래스명, 함수명, 파라미터_리스트")
     }
 
     let fullPackageName = &argumentList[1];
