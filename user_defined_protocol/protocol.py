@@ -8,6 +8,8 @@ class UserDefinedProtocolNumber(Enum):
 
     TCP_TEAM_LLAMA_THREE_TEST = 6
 
+    TCP_TEAM_EXTRACT_TEXT_FROM_PDF_TEST = 8
+
     FIRST_USER_DEFINED_FUNCTION_FOR_TEST = 5
 
 
