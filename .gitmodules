@@ -4,6 +4,3 @@
 [submodule "task_excutor"]
 	path = task_excutor
 	url = https://github.com/EDDI-RobotAcademy/task_executor.git
-[submodule "task_executor"]
-	path = task_executor
-	url = https://github.com/EDDI-RobotAcademy/task_executor.git
