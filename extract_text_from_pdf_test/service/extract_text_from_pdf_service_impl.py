@@ -21,12 +21,13 @@ class ExtractTextFromPdfServiceImpl(ExtractTextFromPdfService):
 
     def extractTextFromPdf(self):
         xmlPaperData = self.__extractTextFromPdfRepository.getPaperXmlData()
-
-        paperList = self.__extractTextFromPdfRepository.XmlToList(xmlPaperData)
-
+        paperList = self.__extractTextFromPdfRepository.xmlToList(xmlPaperData)
         self.__extractTextFromPdfRepository.downloadPaperPDF(paperList)
 
         paperFilePathList = self.__extractTextFromPdfRepository.getAllPaperFilePath()
-
         extractedTextFromPdfList = self.__extractTextFromPdfRepository.extractTextFromPdf(paperFilePathList)
-        print(f"text: {extractedTextFromPdfList[0][:1000]}")
+
+        mainTextList, referencesList = (
+            self.__extractTextFromPdfRepository.separateMainAndReferences(extractedTextFromPdfList))
+        self.__extractTextFromPdfRepository.writeTxtOfSeparatedText(
+            mainTextList, referencesList, paperFilePathList)
