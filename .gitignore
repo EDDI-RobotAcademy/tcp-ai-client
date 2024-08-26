@@ -308,3 +308,6 @@ pyrightconfig.json
 *.pem
 *.key
 *.crt
+
+# exclude models path
+/models/*

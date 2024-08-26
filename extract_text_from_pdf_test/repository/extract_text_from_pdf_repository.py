@@ -7,7 +7,7 @@ class ExtractTextFromPdfRepository(ABC):
         pass
 
     @abstractmethod
-    def XmlToList(self, xmlPaperData):
+    def xmlToList(self, xmlPaperData):
         pass
 
     @abstractmethod
@@ -20,4 +20,12 @@ class ExtractTextFromPdfRepository(ABC):
 
     @abstractmethod
     def extractTextFromPdf(self, paperFilePathList):
+        pass
+
+    @abstractmethod
+    def separateMainAndReferences(self, extratedTextList):
+        pass
+
+    @abstractmethod
+    def writeTxtOfSeparatedText(self, mainTextList, referencesList, paperFilePathList):
         pass
