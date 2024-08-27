@@ -12,7 +12,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     currentPath = os.getcwd()
     print(f"currentPath: {currentPath}")
 
-    modelPath = os.path.join(currentPath, "MLP-KTLim", "llama-3-Korean-Bllossom-8B-Q4_K_M.gguf")
+    modelPath = os.path.join(currentPath, "models", "llama-3-Korean-Bllossom-8B-Q4_K_M.gguf")
 
     tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
