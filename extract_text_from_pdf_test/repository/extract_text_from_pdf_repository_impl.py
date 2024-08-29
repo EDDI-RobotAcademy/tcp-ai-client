@@ -1,4 +1,3 @@
-import json
 import os
 import re
 
@@ -8,7 +7,7 @@ import xml.etree.ElementTree as ET
 import fitz
 
 from extract_text_from_pdf_test.repository.extract_text_from_pdf_repository import ExtractTextFromPdfRepository
-
+from pathlib import Path
 
 class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
     __instance = None
@@ -188,7 +187,7 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
         os.makedirs(referencesFolder, exist_ok=True)
 
         for mainText, paperFilePath in zip(mainTextList, paperFilePathList):
-            paperTitle = paperFilePath.split('papers\\')[-1]
+            paperTitle = Path(paperFilePath).name[:-4]
             fileName = f"{paperTitle}_main.txt"
             filePath = os.path.join(mainFolder, fileName)
             with open(filePath, 'w', encoding='utf-8') as file:
@@ -196,7 +195,7 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
             print(f"{fileName} 파일이 생성되었습니다.")
 
         for references, paperFilePath in zip(referencesList, paperFilePathList):
-            paperTitle = paperFilePath.split('papers\\')[-1]
+            paperTitle = Path(paperFilePath).name[:-4]
             fileName = f"{paperTitle}_references.txt"
             filePath = os.path.join(referencesFolder, fileName)
             with open(filePath, 'w', encoding='utf-8') as file:
