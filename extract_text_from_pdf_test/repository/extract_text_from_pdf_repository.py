@@ -15,6 +15,10 @@ class ExtractTextFromPdfRepository(ABC):
         pass
 
     @abstractmethod
+    def downloadFileFromS3(self, fileName):
+        pass
+
+    @abstractmethod
     def getAllPaperFilePath(self):
         pass
 

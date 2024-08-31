@@ -19,11 +19,13 @@ class ExtractTextFromPdfServiceImpl(ExtractTextFromPdfService):
 
         return cls.__instance
 
-    def extractTextFromPdf(self):
-        xmlPaperData = self.__extractTextFromPdfRepository.getPaperXmlData()
-        paperList = self.__extractTextFromPdfRepository.xmlToList(xmlPaperData)
-        self.__extractTextFromPdfRepository.downloadPaperPDF(paperList)
+    async def extractTextFromPdf(self, fileName):
+        # xmlPaperData = self.__extractTextFromPdfRepository.getPaperXmlData()
+        # paperList = self.__extractTextFromPdfRepository.xmlToList(xmlPaperData)
+        # self.__extractTextFromPdfRepository.downloadPaperPDF(paperList)
+        print(f"service -> fileName: {fileName}")
 
+        await self.__extractTextFromPdfRepository.downloadFileFromS3(fileName)
         paperFilePathList = self.__extractTextFromPdfRepository.getAllPaperFilePath()
         extractedTextFromPdfList = self.__extractTextFromPdfRepository.extractTextFromPdf(paperFilePathList)
 
