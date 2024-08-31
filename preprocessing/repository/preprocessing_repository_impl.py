@@ -1,0 +1,100 @@
+import os
+
+import boto3
+import fitz
+import pymupdf4llm
+
+import torch
+
+from dotenv import load_dotenv
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.vectorstores import FAISS
+
+
+from preprocessing.repository.preprocessing_repository import PreprocessingRepository
+
+load_dotenv()
+
+class PreprocessingRepositoryImpl(PreprocessingRepository):
+    __instance = None
+
+    DOWNLOAD_PATH = 'download_pdfs'
+    EMBEDDING_MODEL_PATH = "intfloat/multilingual-e5-base"
+
+    if torch.cuda.is_available():
+        DEVICE = "cuda"
+    elif torch.backends.mps.is_available():
+        DEVICE = "mps"
+    else:
+        DEVICE = "cpu"
+
+    def __new__(cls):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls)
+
+        return cls.__instance
+
+    @classmethod
+    def getInstance(cls):
+        if cls.__instance is None:
+            cls.__instance = cls()
+
+        return cls.__instance
+
+    def downloadFileFromS3(self, fileKey):
+        aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
+        aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+        region_name = os.getenv('AWS_REGION')
+        bucket_name = os.getenv('BUCKET_NAME')
+
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=region_name
+        )
+
+        bucket_name = bucket_name
+        s3_file_key = fileKey  # S3에 있는 파일 이름
+
+        s3.download_file(bucket_name, s3_file_key, self.DOWNLOAD_PATH)
+
+        print(f"File downloaded to {self.DOWNLOAD_PATH}")
+
+    def extractTextFromPDFToMarkdown(self, PDFPath):
+        doc = fitz.open(PDFPath)
+        text = pymupdf4llm.to_markdown(doc)
+
+        return text
+
+    def splitTextIntoDocuments(self, text, chunkSize=512, chunkOverlap=32):
+        textSplitter = RecursiveCharacterTextSplitter(chunk_size=chunkSize, chunk_overlap=chunkOverlap)
+        chunkList = textSplitter.split_text(text)
+
+        documentList = [Document(page_content=chunk) for chunk in chunkList]
+        return documentList
+
+    def createFAISS(self, documentList):
+        embeddings = HuggingFaceEmbeddings(
+            model_name=self.EMBEDDING_MODEL_PATH,
+            model_kwargs={"device": self.DEVICE},
+            encode_kwargs={"normalize_embedding": True}
+        )
+
+        vectorstore = FAISS.from_documents(documentList, embeddings)
+
+        return vectorstore
+
+    def saveFAISS(self, vectorstore, savePath="vectorstore/faiss_index"):
+        vectorstore.save_local(os.path.join(os.getcwd(), savePath))
+
+    def loadFAISS(self, savePath="vectorstore/faiss_index"):
+        embeddings = HuggingFaceEmbeddings(
+            model_name=self.EMBEDDING_MODEL_PATH,
+            model_kwargs={"device": self.DEVICE},
+            encode_kwargs={"normalize_embedding": True}
+        )
+        vectorstore = FAISS.load_local(os.path.join(os.getcwd(), savePath), embeddings)
+        return vectorstore
