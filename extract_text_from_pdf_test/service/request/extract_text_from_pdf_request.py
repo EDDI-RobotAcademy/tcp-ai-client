@@ -3,9 +3,9 @@ from user_defined_protocol.protocol import UserDefinedProtocolNumber
 
 
 class ExtractTextFromPdfRequest(BaseRequest):
-    def __init__(self, parameterList=None):
+    def __init__(self, **kwargs):
         self.__protocolNumber = UserDefinedProtocolNumber.TCP_TEAM_EXTRACT_TEXT_FROM_PDF_TEST.value
-        self.parameterList = parameterList if parameterList is not None else []
+        self.parameterList = kwargs.get('data', [])
 
     def getProtocolNumber(self):
         return self.__protocolNumber

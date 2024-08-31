@@ -1,6 +1,10 @@
 import os
 
-from transformers import AutoTokenizer, AutoModel
+import torch
+from langchain.chains.retrieval_qa.base import RetrievalQA
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModel, pipeline
 from llama_cpp import Llama
 
 from llama_three_test.repository.llama_three_repository import LlamaThreeRepository
@@ -27,6 +31,13 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                 You are a helpful AI assistant, you'll need to answer users' queries in a friendly and accurate manner.
             """
 
+    if torch.cuda.is_available():
+        DEVICE = "cuda"
+    elif torch.backends.mps.is_available():
+        DEVICE = "mps"
+    else:
+        DEVICE = "cpu"
+
     def __new__(cls):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
@@ -40,28 +51,46 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage):
-        messages = [
-            { "role": "system", "content": f"{self.systemPrompt}" },
-            { "role": "user", "content": f"{userSendMessage}" }
-        ]
+    def generateText(self, userSendMessage, vectorstore):
+        # messages = [
+        #     { "role": "system", "content": f"{self.systemPrompt}" },
+        #     { "role": "user", "content": f"{userSendMessage}" }
+        # ]
+        #
+        # prompt = self.tokenizer.apply_chat_template(
+        #     messages,
+        #     tokenize=False,
+        #     add_generation_prompt=True
+        # )
+        #
+        # generationKwargs = {
+        #     "max_tokens": 512,
+        #     "stop": ["<|eot_id|>"],
+        #     "top_p": 0.9,
+        #     "temperature": 0.6,
+        #     "echo": True
+        # }
+        #
+        # response = self.model(prompt, **generationKwargs)
+        # generatedText = response['choices'][0]['text'][len(prompt):]
+        #
+        # return { "generatedText": generatedText }
 
-        prompt = self.tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
+        modelPipeline = pipeline(
+            "text-generation",
+            model="models/llama-3-Korean-Bllossom-8B-Q4_K_M.gguf",
+            tokenizer=self.tokenizer,
+            device=self.DEVICE
+        )
+        llm = HuggingFacePipeline(pipeline=modelPipeline)
+
+        qa = RetrievalQA.from_chain_type(
+            llm=llm,
+            chian_type="stuff",
+            retriver=vectorstore.as_retriever()
         )
 
-        generationKwargs = {
-            "max_tokens": 512,
-            "stop": ["<|eot_id|>"],
-            "top_p": 0.9,
-            "temperature": 0.6,
-            "echo": True
-        }
+        response = qa.run(userSendMessage)
 
-        response = self.model(prompt, **generationKwargs)
-        generatedText = response['choices'][0]['text'][len(prompt):]
-        print(1)
+        return { "response": response }
 
-        return { "generatedText": generatedText }
