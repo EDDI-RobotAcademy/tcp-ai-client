@@ -43,7 +43,7 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
 
         return cls.__instance
 
-    def downloadFileFromS3(self, fileKey):
+    async def downloadFileFromS3(self, fileKey):
         aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
         aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
         region_name = os.getenv('AWS_REGION')
@@ -56,12 +56,12 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
             region_name=region_name
         )
 
-        bucket_name = bucket_name
-        s3_file_key = fileKey  # S3에 있는 파일 이름
+        downloadedFileName = os.path.join(self.DOWNLOAD_PATH, fileKey)
 
-        s3.download_file(bucket_name, s3_file_key, self.DOWNLOAD_PATH)
+        # 파일 다운로드 실행
+        s3.download_file(bucket_name, fileKey, downloadedFileName)
 
-        print(f"File downloaded to {self.DOWNLOAD_PATH}")
+        print(f"File downloaded to {downloadedFileName}")
 
     def extractTextFromPDFToMarkdown(self, PDFPath):
         doc = fitz.open(PDFPath)
