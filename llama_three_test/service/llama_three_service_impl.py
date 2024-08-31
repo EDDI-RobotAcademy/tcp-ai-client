@@ -23,14 +23,14 @@ class LlamaThreeServiceImpl(LlamaThreeService):
 
         return cls.__instance
 
-    def letsChat(self, userSendMessage, fileKey=None):
+    async def letsChat(self, userSendMessage, fileKey=None):
         print(f"service -> letsChat() userSendMessage: {userSendMessage}")
         print(f"service -> letsChat() fileKey: {fileKey}")
         if fileKey is not None:
             DOWNLOAD_PATH = "download_pdfs"
             FILE_PATH = os.path.join(os.getcwd(), DOWNLOAD_PATH, fileKey)
 
-            self.__preprocessingRepository.downloadFileFromS3(fileKey)
+            await self.__preprocessingRepository.downloadFileFromS3(fileKey)
             text = self.__preprocessingRepository.extractTextFromPDFToMarkdown(FILE_PATH)
             documentList = self.__preprocessingRepository.splitTextIntoDocuments(text)
 
