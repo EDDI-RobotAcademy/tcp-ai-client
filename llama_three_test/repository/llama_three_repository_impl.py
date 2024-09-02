@@ -41,7 +41,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage, vectorstore):
+    def generateText(self, userSendMessage, vectorstore, context):
         # messages = [
         #     { "role": "system", "content": f"{self.systemPrompt}" },
         #     { "role": "user", "content": f"{userSendMessage}" }
@@ -66,25 +66,43 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         #
         # return { "generatedText": generatedText }
 
-        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
-        retrievedDocs = retriever.get_relevant_documents(userSendMessage)
+        if context is None:
+            retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+            retrievedDocs = retriever.get_relevant_documents(userSendMessage)
 
-        context = " ".join([doc.page_content for doc in retrievedDocs])
-        prompt = f"""
-            당신은 고급 논문 분석 AI 어시스턴트입니다. 주어진 논문과 검색된 관련 문서들을 기반으로 다음과 같은 작업을 수행해야 합니다:
+            context = " ".join([doc.page_content for doc in retrievedDocs])
+            prompt = f"""
+                당신은 고급 논문 분석 AI 어시스턴트입니다. 주어진 논문과 검색된 관련 문서들을 기반으로 다음과 같은 작업을 수행해야 합니다:
+    
+                **문서와 Context 활용**:
+                - 주어진 Context(검색된 문서들 포함)를 최대한 활용하여 질문에 대답하세요.
+                - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
+                - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
+    
+                **Context**:
+                {context}
+    
+                **질문**: {userSendMessage}
+    
+                **답변**:
+                """
 
-            **문서와 Context 활용**:
-            - 주어진 Context(검색된 문서들 포함)를 최대한 활용하여 질문에 대답하세요.
-            - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
-            - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
+        else:
+            prompt = f"""
+                당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 Context를 기반으로 다음과 같은 작업을 수행해야 합니다:
 
-            **Context**:
-            {context}
+                **문서 활용**:
+                - 주어진 Context의 내용만 활용하세요.
+                - 주어진 Context의 핵심 주제와 그 주제를 뒷받침하는 내용을 포함해야합니다.
+                - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
+                - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
+                
+                **Context**: {context}
+                
+                **질문**: {userSendMessage}
 
-            **질문**: {userSendMessage}
-
-            **답변**:
-            """
+                **답변**:
+                """
 
         generationKwargs = {
             "max_tokens": 512,
@@ -95,4 +113,4 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         output = self.model(prompt, **generationKwargs)
 
-        return { "generatedText": output['choices'][0]['text'].strip() }
+        return {"generatedText": output['choices'][0]['text'].strip()}

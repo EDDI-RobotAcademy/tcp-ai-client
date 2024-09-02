@@ -26,6 +26,8 @@ class LlamaThreeServiceImpl(LlamaThreeService):
     async def letsChat(self, userSendMessage, fileKey=None):
         print(f"service -> letsChat() userSendMessage: {userSendMessage}")
         print(f"service -> letsChat() fileKey: {fileKey}")
+        text = None
+
         if fileKey is not None:
             DOWNLOAD_PATH = "download_pdfs"
             FILE_PATH = os.path.join(os.getcwd(), DOWNLOAD_PATH, fileKey)
@@ -40,4 +42,4 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         else:
             vectorstore = self.__preprocessingRepository.loadFAISS()
 
-        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore)
+        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, text)
