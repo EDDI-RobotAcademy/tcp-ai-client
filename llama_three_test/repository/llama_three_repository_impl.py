@@ -2,15 +2,21 @@ import os
 
 import numpy as np
 import torch
+from dotenv import load_dotenv
 from langchain.chains.retrieval_qa.base import RetrievalQA
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from langchain_core import documents
+from sympy.physics.units import temperature
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel, pipeline
 from llama_cpp import Llama
+import openai
 
 from llama_three_test.repository.llama_three_repository import LlamaThreeRepository
 
+load_dotenv()
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     __instance = None
@@ -87,30 +93,46 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                 **답변**:
                 """
 
+            generationKwargs = {
+                "max_tokens": 512,
+                "top_p": 0.9,
+                "temperature": 0.5,
+                "stop": ["---", "**"],
+            }
+
+            output = self.model(prompt, **generationKwargs)
+
+            return {"generatedText": output['choices'][0]['text'].strip()}
+
         else:
-            prompt = f"""
-                당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 Context를 기반으로 다음과 같은 작업을 수행해야 합니다:
-
-                **문서 활용**:
-                - 주어진 Context의 내용만 활용하세요.
-                - 주어진 Context의 핵심 주제와 그 주제를 뒷받침하는 내용을 포함해야합니다.
-                - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
+            systemPrompt = f"""
+                당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 논문과 사용자의 질문을 기반으로 다음과 같은 작업을 수행해야 합니다:
+    
+                **논문과 질문 활용**:
+                - 주어진 Context(논문)를 최대한 활용하여 질문에 대답하세요.
+                - 사용자의 질문 내용에 대한 답변이 포함되어야 합니다.
+                - 응답에서 추가적인 설명이나 불필요한 정보, 또는 확인되지 않은 정보는 포함하지 마세요.
+                - 모르는 내용은 모른다고 대답하세요.
+                - 대답하기 전에, 스스로 대답을 검토하고 대답하세요.
                 - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
-                
-                **Context**: {context}
-                
+    
+                **Context**:
+                {context}
+    
                 **질문**: {userSendMessage}
-
+    
                 **답변**:
                 """
+            response = openai.ChatCompletion.create(
+                model="gpt-4o-mini-2024-07-18",
+                messages=[
+                    {"role": "system", "content": systemPrompt},
+                    {"role": "user", "content": userSendMessage}
+                ],
+                max_token=512,
+                temperature=0.4
+            )
 
-        generationKwargs = {
-            "max_tokens": 512,
-            "top_p": 0.9,
-            "temperature": 0.5,
-            "stop": ["---", "**"],
-        }
+            generatedText = response['choices'][0]['message']['content']
 
-        output = self.model(prompt, **generationKwargs)
-
-        return {"generatedText": output['choices'][0]['text'].strip()}
+            return {"generatedText": generatedText}
