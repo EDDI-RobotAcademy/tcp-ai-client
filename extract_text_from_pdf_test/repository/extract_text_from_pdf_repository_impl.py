@@ -97,14 +97,14 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
 
         print(f"File downloaded to {filePath}")
 
-    def getAllPaperFilePath(self):
+    async def getAllPaperFilePath(self):
         folderPath = 'papers'
         fileNameList = os.listdir(folderPath)
         filePathList = [os.path.join(folderPath, fileName) for fileName in fileNameList]
 
         return filePathList
 
-    def extractTextFromPdf(self, paperFilePathList):
+    async def extractTextFromPdf(self, paperFilePathList):
         extratedTextList = []
         for paperFilePath in paperFilePathList:
             extratedText = ""
@@ -121,7 +121,7 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
 
         return extratedTextList
 
-    def separateMainAndReferences(self, extratedTextList):
+    async def separateMainAndReferences(self, extratedTextList):
         mainTextList = []
         referencesList = []
         for text in extratedTextList:
@@ -202,7 +202,7 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
 
         return mainTextList, referencesList
 
-    def writeTxtOfSeparatedText(self, mainTextList, referencesList, paperFilePathList):
+    async def writeTxtOfSeparatedText(self, mainTextList, referencesList, paperFilePathList):
         mainFolder = 'papers_main'
         referencesFolder = 'papers_references'
 

@@ -66,20 +66,20 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
 
         print(f"File downloaded to {downloadedFileName}")
 
-    def extractTextFromPDFToMarkdown(self, PDFPath):
+    async def extractTextFromPDFToMarkdown(self, PDFPath):
         doc = fitz.open(PDFPath)
         text = pymupdf4llm.to_markdown(doc)
 
         return text
 
-    def splitTextIntoDocuments(self, text, chunkSize=256, chunkOverlap=16):
+    async def splitTextIntoDocuments(self, text, chunkSize=256, chunkOverlap=16):
         textSplitter = RecursiveCharacterTextSplitter(chunk_size=chunkSize, chunk_overlap=chunkOverlap)
         chunkList = textSplitter.split_text(text)
 
         documentList = [Document(page_content=chunk) for chunk in chunkList]
         return documentList
 
-    def createFAISS(self, documentList):
+    async def createFAISS(self, documentList):
         embeddings = HuggingFaceEmbeddings(
             model_name=self.EMBEDDING_MODEL_PATH,
             model_kwargs={"device": self.DEVICE},
@@ -90,13 +90,13 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
 
         return vectorstore
 
-    def saveFAISS(self, vectorstore, savePath="vectorstore/faiss_index"):
+    async def saveFAISS(self, vectorstore, savePath="vectorstore/faiss_index"):
         if not os.path.exists(os.path.join(os.getcwd(), "vectorstore")):
             os.mkdir(os.path.join(os.getcwd(), "vectorstore"))
 
         vectorstore.save_local(os.path.join(os.getcwd(), savePath))
 
-    def loadFAISS(self, savePath="vectorstore/faiss_index"):
+    async def loadFAISS(self, savePath="vectorstore/faiss_index"):
         embeddings = HuggingFaceEmbeddings(
             model_name=self.EMBEDDING_MODEL_PATH,
             model_kwargs={"device": self.DEVICE},

@@ -1,3 +1,5 @@
+import asyncio
+import concurrent
 import os
 
 import numpy as np
@@ -23,7 +25,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
         model_path=modelPath,
-        n_ctx=1024,
+        n_ctx=5000,
         n_gpu_layers=-1
     )
     model.verbose = False  # make model silent
@@ -41,7 +43,17 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage, vectorstore, context):
+    async def get_relevant_documents_async(self, retriever, userSendMessage):
+        return await asyncio.to_thread(retriever.get_relevant_documents, userSendMessage)
+
+    async def as_retriever_async(self, vectorstore, searchType, searchKwargs):
+        return await asyncio.to_thread(vectorstore.as_retriever, searchType, searchKwargs)
+
+    def model_call(self, prompt, max_tokens, top_p, temperature, stop):
+        return self.model(prompt, max_tokens=max_tokens, top_p=top_p, temperature=temperature, stop=stop)
+
+    async def generateText(self, userSendMessage, vectorstore, context):
+        print("Start to generateText()")
         # messages = [
         #     { "role": "system", "content": f"{self.systemPrompt}" },
         #     { "role": "user", "content": f"{userSendMessage}" }
@@ -67,8 +79,14 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         # return { "generatedText": generatedText }
 
         if context is None:
-            retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
-            retrievedDocs = retriever.get_relevant_documents(userSendMessage)
+            print("if 조건문에서 구동합니다")
+            print("before as_retriever()")
+            retriever = await self.as_retriever_async(vectorstore, searchType="similarity", searchKwargs={"k": 5})
+            # retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+            print("after as_retriever()")
+            retrievedDocs = await self.get_relevant_documents_async(retriever, userSendMessage)
+            # retriever.get_relevant_documents(userSendMessage)
+            print("after get_relevant_documents()")
 
             context = " ".join([doc.page_content for doc in retrievedDocs])
             prompt = f"""
@@ -88,6 +106,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                 """
 
         else:
+            print("else에서 구동합니다")
             prompt = f"""
                 당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 Context를 기반으로 다음과 같은 작업을 수행해야 합니다:
 
@@ -111,6 +130,22 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
             "stop": ["---", "**"],
         }
 
-        output = self.model(prompt, **generationKwargs)
+        # output = await self.model(prompt, **generationKwargs)
+        try:
+            # output = await asyncio.to_thread(self.model, prompt, **generationKwargs)
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                output = await loop.run_in_executor(
+                    pool,
+                    self.model_call,
+                    prompt,
+                    generationKwargs["max_tokens"],
+                    generationKwargs["top_p"],
+                    generationKwargs["temperature"],
+                    generationKwargs["stop"]
+                )
+            print("결과 출력 완료!")
+        except Exception as e:
+            print(f"Error: {str(e)}")
 
         return {"generatedText": output['choices'][0]['text'].strip()}

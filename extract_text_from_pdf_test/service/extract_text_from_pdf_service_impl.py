@@ -26,10 +26,10 @@ class ExtractTextFromPdfServiceImpl(ExtractTextFromPdfService):
         print(f"service -> fileName: {fileName}")
 
         await self.__extractTextFromPdfRepository.downloadFileFromS3(fileName)
-        paperFilePathList = self.__extractTextFromPdfRepository.getAllPaperFilePath()
-        extractedTextFromPdfList = self.__extractTextFromPdfRepository.extractTextFromPdf(paperFilePathList)
+        paperFilePathList = await self.__extractTextFromPdfRepository.getAllPaperFilePath()
+        extractedTextFromPdfList = await self.__extractTextFromPdfRepository.extractTextFromPdf(paperFilePathList)
 
         mainTextList, referencesList = (
-            self.__extractTextFromPdfRepository.separateMainAndReferences(extractedTextFromPdfList))
-        self.__extractTextFromPdfRepository.writeTxtOfSeparatedText(
+            await self.__extractTextFromPdfRepository.separateMainAndReferences(extractedTextFromPdfList))
+        await self.__extractTextFromPdfRepository.writeTxtOfSeparatedText(
             mainTextList, referencesList, paperFilePathList)

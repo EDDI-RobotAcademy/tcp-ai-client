@@ -33,13 +33,18 @@ class LlamaThreeServiceImpl(LlamaThreeService):
             FILE_PATH = os.path.join(os.getcwd(), DOWNLOAD_PATH, fileKey)
 
             await self.__preprocessingRepository.downloadFileFromS3(fileKey)
-            text = self.__preprocessingRepository.extractTextFromPDFToMarkdown(FILE_PATH)
-            documentList = self.__preprocessingRepository.splitTextIntoDocuments(text)
+            text = await self.__preprocessingRepository.extractTextFromPDFToMarkdown(FILE_PATH)
+            print("finish to extract pdf")
+            documentList = await self.__preprocessingRepository.splitTextIntoDocuments(text)
+            print("finish to split text")
 
-            vectorstore = self.__preprocessingRepository.createFAISS(documentList)
-            self.__preprocessingRepository.saveFAISS(vectorstore)
+            vectorstore = await self.__preprocessingRepository.createFAISS(documentList)
+            print("finish to create faiss")
+            await self.__preprocessingRepository.saveFAISS(vectorstore)
+            print("finish to save faiss")
 
         else:
-            vectorstore = self.__preprocessingRepository.loadFAISS()
+            vectorstore = await self.__preprocessingRepository.loadFAISS()
+            print("finish to load faiss")
 
-        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, text)
+        return await self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, text)
