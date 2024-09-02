@@ -59,7 +59,7 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         if not os.path.exists(os.path.join(os.getcwd(), self.DOWNLOAD_PATH)):
             os.mkdir(os.path.join(os.getcwd(), self.DOWNLOAD_PATH))
 
-        downloadedFileName = os.path.join(self.DOWNLOAD_PATH, fileKey)
+        downloadedFileName = os.path.join(os.path.join(os.getcwd(), self.DOWNLOAD_PATH), fileKey)
 
         # 파일 다운로드 실행
         s3.download_file(bucket_name, fileKey, downloadedFileName)
