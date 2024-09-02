@@ -1,4 +1,6 @@
+import asyncio
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import boto3
 import fitz
@@ -79,15 +81,32 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         documentList = [Document(page_content=chunk) for chunk in chunkList]
         return documentList
 
-    async def createFAISS(self, documentList):
+    async def run_in_executor(self, func, *args):
+        loop = asyncio.get_running_loop()
+        with ThreadPoolExecutor() as pool:
+            try:
+                result = await loop.run_in_executor(pool, func, *args)
+                print(f"Function {func.__name__} executed successfully.")
+                return result
+            except Exception as e:
+                print(f"Error executing function {func.__name__}: {e}")
+                raise
+
+    def create_faiss_sync(self, documentList):
+        print("Starting create_faiss_sync")
         embeddings = HuggingFaceEmbeddings(
             model_name=self.EMBEDDING_MODEL_PATH,
             model_kwargs={"device": self.DEVICE},
             encode_kwargs={"normalize_embeddings": True}
         )
-
         vectorstore = FAISS.from_documents(documentList, embeddings)
+        print("Finished create_faiss_sync")
+        return vectorstore
 
+    async def createFAISS(self, documentList):
+        print("Starting createFAISS")
+        vectorstore = await self.run_in_executor(self.create_faiss_sync, documentList)
+        print("Finished createFAISS")
         return vectorstore
 
     async def saveFAISS(self, vectorstore, savePath="vectorstore/faiss_index"):

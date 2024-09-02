@@ -50,7 +50,9 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         return await asyncio.to_thread(vectorstore.as_retriever, searchType, searchKwargs)
 
     def model_call(self, prompt, max_tokens, top_p, temperature, stop):
-        return self.model(prompt, max_tokens=max_tokens, top_p=top_p, temperature=temperature, stop=stop)
+        result = self.model(prompt, max_tokens=max_tokens, top_p=top_p, temperature=temperature, stop=stop)
+        print("Model call result:", result)
+        return result
 
     async def generateText(self, userSendMessage, vectorstore, context):
         print("Start to generateText()")
@@ -106,7 +108,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                 """
 
         else:
-            print("else에서 구동합니다")
+            print("else -> Using provided context.")
             prompt = f"""
                 당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 Context를 기반으로 다음과 같은 작업을 수행해야 합니다:
 
@@ -144,7 +146,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                     generationKwargs["temperature"],
                     generationKwargs["stop"]
                 )
-            print("결과 출력 완료!")
+            print(f"결과 출력 완료: {output}")
         except Exception as e:
             print(f"Error: {str(e)}")
 
