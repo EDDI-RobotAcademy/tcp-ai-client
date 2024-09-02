@@ -1,14 +1,14 @@
-import json
 import os
 import re
 
-
+import boto3
 import requests
 import xml.etree.ElementTree as ET
 import fitz
+from dotenv import load_dotenv
 
 from extract_text_from_pdf_test.repository.extract_text_from_pdf_repository import ExtractTextFromPdfRepository
-
+from pathlib import Path
 
 class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
     __instance = None
@@ -74,8 +74,31 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
                 f.write(response.content)
             print(f"Downloaded: {filePath}")
 
+    async def downloadFileFromS3(self, fileName):
+        load_dotenv()
+
+        awsAccessKeyId = os.getenv('AWS_ACCESS_KEY_ID')
+        awsSecretAccessKey = os.getenv('AWS_SECRET_ACCESS_KEY')
+        regionName = os.getenv('AWS_REGION')
+        bucketName = os.getenv('BUCKET_NAME')
+
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=awsAccessKeyId,
+            aws_secret_access_key=awsSecretAccessKey,
+            region_name=regionName
+        )
+
+        s3FileKey = fileName  # S3에 있는 파일 이름
+        filePath = os.path.join('papers', fileName)
+
+        print(f"fileName: {fileName}")
+        s3.download_file(bucketName, s3FileKey, filePath)
+
+        print(f"File downloaded to {filePath}")
+
     def getAllPaperFilePath(self):
-        folderPath = 'papers'  # 임시 폴더 생성
+        folderPath = 'papers'
         fileNameList = os.listdir(folderPath)
         filePathList = [os.path.join(folderPath, fileName) for fileName in fileNameList]
 
@@ -188,7 +211,7 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
         os.makedirs(referencesFolder, exist_ok=True)
 
         for mainText, paperFilePath in zip(mainTextList, paperFilePathList):
-            paperTitle = paperFilePath.split('papers\\')[-1]
+            paperTitle = Path(paperFilePath).name[:-4]
             fileName = f"{paperTitle}_main.txt"
             filePath = os.path.join(mainFolder, fileName)
             with open(filePath, 'w', encoding='utf-8') as file:
@@ -196,7 +219,7 @@ class ExtractTextFromPdfRepositoryImpl(ExtractTextFromPdfRepository):
             print(f"{fileName} 파일이 생성되었습니다.")
 
         for references, paperFilePath in zip(referencesList, paperFilePathList):
-            paperTitle = paperFilePath.split('papers\\')[-1]
+            paperTitle = Path(paperFilePath).name[:-4]
             fileName = f"{paperTitle}_references.txt"
             filePath = os.path.join(referencesFolder, fileName)
             with open(filePath, 'w', encoding='utf-8') as file:
