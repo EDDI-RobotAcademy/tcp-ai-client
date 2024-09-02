@@ -1,8 +1,10 @@
 import os
 
+import numpy as np
 import torch
 from langchain.chains.retrieval_qa.base import RetrievalQA
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from langchain_core import documents
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel, pipeline
 from llama_cpp import Llama
@@ -21,22 +23,10 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
         model_path=modelPath,
-        n_ctx=512,
+        n_ctx=1024,
         n_gpu_layers=-1
     )
     model.verbose = False  # make model silent
-
-    systemPrompt = """
-                당신은 유용한 AI 어시스턴트입니다. 사용자의 질의에 대해 친절하고 정확하게 답변해야 합니다.
-                You are a helpful AI assistant, you'll need to answer users' queries in a friendly and accurate manner.
-            """
-
-    if torch.cuda.is_available():
-        DEVICE = "cuda"
-    elif torch.backends.mps.is_available():
-        DEVICE = "mps"
-    else:
-        DEVICE = "cpu"
 
     def __new__(cls):
         if cls.__instance is None:
@@ -51,7 +41,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage, vectorstore):
+    def generateText(self, userSendMessage, vectorstore, context):
         # messages = [
         #     { "role": "system", "content": f"{self.systemPrompt}" },
         #     { "role": "user", "content": f"{userSendMessage}" }
@@ -76,20 +66,51 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         #
         # return { "generatedText": generatedText }
 
-        modelPipeline = pipeline(
-            "text-generation",
-            model="models/llama-3-Korean-Bllossom-8B-Q4_K_M.gguf",
-            tokenizer=self.tokenizer,
-            device=self.DEVICE
-        )
-        llm = HuggingFacePipeline(pipeline=modelPipeline)
+        if context is None:
+            retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+            retrievedDocs = retriever.get_relevant_documents(userSendMessage)
 
-        qa = RetrievalQA.from_chain_type(
-            llm=llm,
-            chian_type="stuff",
-            retriver=vectorstore.as_retriever()
-        )
+            context = " ".join([doc.page_content for doc in retrievedDocs])
+            prompt = f"""
+                당신은 고급 논문 분석 AI 어시스턴트입니다. 주어진 논문과 검색된 관련 문서들을 기반으로 다음과 같은 작업을 수행해야 합니다:
+    
+                **문서와 Context 활용**:
+                - 주어진 Context(검색된 문서들 포함)를 최대한 활용하여 질문에 대답하세요.
+                - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
+                - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
+    
+                **Context**:
+                {context}
+    
+                **질문**: {userSendMessage}
+    
+                **답변**:
+                """
 
-        response = qa.run(userSendMessage)
+        else:
+            prompt = f"""
+                당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 Context를 기반으로 다음과 같은 작업을 수행해야 합니다:
 
-        return { "response": response }
+                **문서 활용**:
+                - 주어진 Context의 내용만 활용하세요.
+                - 주어진 Context의 핵심 주제와 그 주제를 뒷받침하는 내용을 포함해야합니다.
+                - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
+                - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
+                
+                **Context**: {context}
+                
+                **질문**: {userSendMessage}
+
+                **답변**:
+                """
+
+        generationKwargs = {
+            "max_tokens": 512,
+            "top_p": 0.9,
+            "temperature": 0.5,
+            "stop": ["---", "**"],
+        }
+
+        output = self.model(prompt, **generationKwargs)
+
+        return {"generatedText": output['choices'][0]['text'].strip()}

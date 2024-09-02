@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 
 
 from preprocessing.repository.preprocessing_repository import PreprocessingRepository
@@ -56,7 +56,10 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
             region_name=region_name
         )
 
-        downloadedFileName = os.path.join(self.DOWNLOAD_PATH, fileKey)
+        if not os.path.exists(os.path.join(os.getcwd(), self.DOWNLOAD_PATH)):
+            os.mkdir(os.path.join(os.getcwd(), self.DOWNLOAD_PATH))
+
+        downloadedFileName = os.path.join(os.path.join(os.getcwd(), self.DOWNLOAD_PATH), fileKey)
 
         # 파일 다운로드 실행
         s3.download_file(bucket_name, fileKey, downloadedFileName)
@@ -69,7 +72,7 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
 
         return text
 
-    def splitTextIntoDocuments(self, text, chunkSize=512, chunkOverlap=32):
+    def splitTextIntoDocuments(self, text, chunkSize=256, chunkOverlap=16):
         textSplitter = RecursiveCharacterTextSplitter(chunk_size=chunkSize, chunk_overlap=chunkOverlap)
         chunkList = textSplitter.split_text(text)
 
@@ -80,7 +83,7 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         embeddings = HuggingFaceEmbeddings(
             model_name=self.EMBEDDING_MODEL_PATH,
             model_kwargs={"device": self.DEVICE},
-            encode_kwargs={"normalize_embedding": True}
+            encode_kwargs={"normalize_embeddings": True}
         )
 
         vectorstore = FAISS.from_documents(documentList, embeddings)
@@ -88,13 +91,16 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         return vectorstore
 
     def saveFAISS(self, vectorstore, savePath="vectorstore/faiss_index"):
+        if not os.path.exists(os.path.join(os.getcwd(), "vectorstore")):
+            os.mkdir(os.path.join(os.getcwd(), "vectorstore"))
+
         vectorstore.save_local(os.path.join(os.getcwd(), savePath))
 
     def loadFAISS(self, savePath="vectorstore/faiss_index"):
         embeddings = HuggingFaceEmbeddings(
             model_name=self.EMBEDDING_MODEL_PATH,
             model_kwargs={"device": self.DEVICE},
-            encode_kwargs={"normalize_embedding": True}
+            encode_kwargs={"normalize_embeddings": True}
         )
         vectorstore = FAISS.load_local(os.path.join(os.getcwd(), savePath), embeddings)
         return vectorstore
