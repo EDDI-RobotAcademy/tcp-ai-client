@@ -23,15 +23,10 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
         model_path=modelPath,
-        n_ctx=512,
+        n_ctx=1024,
         n_gpu_layers=-1
     )
     model.verbose = False  # make model silent
-
-    systemPrompt = """
-                당신은 유용한 AI 어시스턴트입니다. 사용자의 질의에 대해 친절하고 정확하게 답변해야 합니다.
-                You are a helpful AI assistant, you'll need to answer users' queries in a friendly and accurate manner.
-            """
 
     def __new__(cls):
         if cls.__instance is None:
@@ -71,15 +66,34 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         #
         # return { "generatedText": generatedText }
 
-        queryEmbedding = self.model.embed(userSendMessage)
+        retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        retrievedDocs = retriever.get_relevant_documents(userSendMessage)
 
-        distances, indices = vectorstore.search(np.array([queryEmbedding]), 5)
+        context = " ".join([doc.page_content for doc in retrievedDocs])
+        prompt = f"""
+            당신은 고급 논문 분석 AI 어시스턴트입니다. 주어진 논문과 검색된 관련 문서들을 기반으로 다음과 같은 작업을 수행해야 합니다:
 
-        retrievedDocs = [documents[i] for i in indices[0]]
+            **문서와 Context 활용**:
+            - 주어진 Context(검색된 문서들 포함)를 최대한 활용하여 질문에 대답하세요.
+            - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
+            - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
 
-        context = " ".join(retrievedDocs)
-        prompt = f"주어진 Context의 내용을 바탕으로 질문에 대답하세요. 모르는 내용이 나오면 검색하거나 모른다고 대답하세요.\n\nContext: {context}\nQuestion: {queryEmbedding}\nAnswer:"
+            **Context**:
+            {context}
 
-        output = self.model(prompt, max_tokens=512, temperature=0.3)
+            **질문**: {userSendMessage}
 
-        return { "generatedText": output['choices'][0]['text'] }
+            **답변**:
+            """
+
+        generationKwargs = {
+            "max_tokens": 512,
+            "top_p": 0.9,
+            "temperature": 0.5,
+            "stop": ["---", "**"],
+        }
+
+        output = self.model(prompt, **generationKwargs)
+
+        return { "generatedText": output['choices'][0]['text'].strip() }
+
