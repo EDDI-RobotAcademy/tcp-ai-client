@@ -11,7 +11,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-
+from sentence_transformers import SentenceTransformer
 
 from preprocessing.repository.preprocessing_repository import PreprocessingRepository
 
@@ -80,13 +80,16 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         return documentList
 
     def createFAISS(self, documentList):
+        print("ready to create HuggingFaceEmbeddings!")
         embeddings = HuggingFaceEmbeddings(
             model_name=self.EMBEDDING_MODEL_PATH,
             model_kwargs={"device": self.DEVICE},
             encode_kwargs={"normalize_embeddings": True}
         )
+        print(f"success to create HuggingFaceEmbeddings: {embeddings}")
 
         vectorstore = FAISS.from_documents(documentList, embeddings)
+        print("success to create VectorStore")
 
         return vectorstore
 

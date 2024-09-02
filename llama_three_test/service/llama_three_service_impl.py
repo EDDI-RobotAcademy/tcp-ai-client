@@ -23,7 +23,9 @@ class LlamaThreeServiceImpl(LlamaThreeService):
 
         return cls.__instance
 
-    async def letsChat(self, userSendMessage, fileKey=None):
+    async def letsChat(self, *arg, **kwargs):
+        userSendMessage = arg[0]
+        fileKey = arg[1]
         print(f"service -> letsChat() userSendMessage: {userSendMessage}")
         print(f"service -> letsChat() fileKey: {fileKey}")
         text = None
@@ -33,10 +35,15 @@ class LlamaThreeServiceImpl(LlamaThreeService):
             FILE_PATH = os.path.join(os.getcwd(), DOWNLOAD_PATH, fileKey)
 
             await self.__preprocessingRepository.downloadFileFromS3(fileKey)
+            print("finish to download file")
             text = self.__preprocessingRepository.extractTextFromPDFToMarkdown(FILE_PATH)
+            print("finish to extract pdf to markdown")
+
             documentList = self.__preprocessingRepository.splitTextIntoDocuments(text)
+            print("finish to split text")
 
             vectorstore = self.__preprocessingRepository.createFAISS(documentList)
+            print("finish to create FAISS")
             self.__preprocessingRepository.saveFAISS(vectorstore)
 
         else:
