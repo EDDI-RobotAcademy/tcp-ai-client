@@ -28,7 +28,7 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         fileKey = arg[1]
         print(f"service -> letsChat() userSendMessage: {userSendMessage}")
         print(f"service -> letsChat() fileKey: {fileKey}")
-        text = None
+        mainText = None
 
         if fileKey is not None:
             DOWNLOAD_PATH = "download_pdfs"
@@ -39,7 +39,11 @@ class LlamaThreeServiceImpl(LlamaThreeService):
             text = self.__preprocessingRepository.extractTextFromPDFToMarkdown(FILE_PATH)
             print("finish to extract pdf to markdown")
 
-            documentList = self.__preprocessingRepository.splitTextIntoDocuments(text)
+            mainText, _ = self.__preprocessingRepository.separateMainAndReferences(text)
+            print(f"mainText: {mainText}")
+            print("finish to separate main and references")
+
+            documentList = self.__preprocessingRepository.splitTextIntoDocuments(mainText)
             print("finish to split text")
 
             vectorstore = self.__preprocessingRepository.createFAISS(documentList)
@@ -49,4 +53,4 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         else:
             vectorstore = self.__preprocessingRepository.loadFAISS()
 
-        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, text)
+        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, mainText)

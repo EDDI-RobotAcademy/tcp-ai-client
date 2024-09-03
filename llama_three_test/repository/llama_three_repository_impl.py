@@ -47,7 +47,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage, vectorstore, context):
+    def generateText(self, userSendMessage, vectorstore, mainText):
         # messages = [
         #     { "role": "system", "content": f"{self.systemPrompt}" },
         #     { "role": "user", "content": f"{userSendMessage}" }
@@ -117,7 +117,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                 - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
     
                 **Context**:
-                {context}
+                {mainText}
     
                 **질문**: {userSendMessage}
     

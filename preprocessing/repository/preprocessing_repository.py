@@ -11,9 +11,21 @@ class PreprocessingRepository(ABC):
         pass
 
     @abstractmethod
+    def separateMainAndReferences(self, text):
+        pass
+
+    @abstractmethod
     def splitTextIntoDocuments(self, text, chunkSize=512, chunkOverlap=32):
         pass
 
     @abstractmethod
     def createFAISS(self, documentList):
+        pass
+
+    @abstractmethod
+    def saveFAISS(self, vectorstore, savePath):
+        pass
+
+    @abstractmethod
+    def loadFAISS(self, savePath):
         pass

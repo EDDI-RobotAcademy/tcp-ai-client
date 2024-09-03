@@ -3,5 +3,5 @@ from abc import abstractmethod, ABC
 
 class LlamaThreeRepository(ABC):
     @abstractmethod
-    def generateText(self, userSendMessage, vectorstore, context):
+    def generateText(self, userSendMessage, vectorstore, mainText):
         pass
