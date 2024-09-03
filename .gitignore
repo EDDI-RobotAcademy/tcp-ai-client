@@ -311,3 +311,12 @@ pyrightconfig.json
 
 # exclude models path
 /models/*
+
+# exclude nltk_data path
+nltk_data/
+
+# exclude *.Identifier
+*.Identifier
+
+# exclude download_pdfs path
+download_pdfs/
