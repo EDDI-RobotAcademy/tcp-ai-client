@@ -109,6 +109,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
             # StuffDocumentsChain 정의
             stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="context")
 
+
             output = stuff_chain.invoke({"input_documents": docs})
 
             return {"message": output["output_text"]}

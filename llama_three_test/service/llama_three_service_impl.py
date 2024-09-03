@@ -28,7 +28,7 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         fileKey = arg[1]
         print(f"service -> letsChat() userSendMessage: {userSendMessage}")
         print(f"service -> letsChat() fileKey: {fileKey}")
-        text = None
+        mainText = None
 
         if not os.path.exists(os.path.join(os.getcwd(), "vectorstore")):
             os.mkdir(os.path.join(os.getcwd(), "vectorstore"))
@@ -45,7 +45,11 @@ class LlamaThreeServiceImpl(LlamaThreeService):
             text = self.__preprocessingRepository.extractTextFromPDFToMarkdown(FILE_PATH)
             print("finish to extract pdf to markdown")
 
-            documentList = self.__preprocessingRepository.splitTextIntoDocuments(text)
+            mainText, _ = self.__preprocessingRepository.separateMainAndReferences(text)
+            print(f"mainText: {mainText}")
+            print("finish to separate main and references")
+
+            documentList = self.__preprocessingRepository.splitTextIntoDocuments(mainText)
             print("finish to split text")
 
             dbPath = os.path.join(os.getcwd(), "vectorstore", fileKey.split(".")[0])
@@ -60,3 +64,4 @@ class LlamaThreeServiceImpl(LlamaThreeService):
             vectorstore = None
 
         return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, fileKey)
+
