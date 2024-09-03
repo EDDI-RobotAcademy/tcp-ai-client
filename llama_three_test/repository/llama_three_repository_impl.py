@@ -1,4 +1,6 @@
 import os
+import nltk
+import networkx as nx
 
 from dotenv import load_dotenv
 from langchain import hub
@@ -13,6 +15,10 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.documents import Document
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from nltk.tokenize import sent_tokenize, word_tokenize
 import openai
 
 from llama_three_test.repository.llama_three_repository import LlamaThreeRepository
@@ -27,6 +33,14 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     llm = ChatOpenAI(temperature=0.3, model_name="gpt-4o-mini")
     memory = ConversationSummaryBufferMemory(llm=llm, memory_key='chat_history', return_messages=True)
 
+    nltkDataPath = os.path.join(os.getcwd(), 'nltk_data')
+    if not os.path.exists(nltkDataPath):
+        os.mkdir(nltkDataPath)
+
+    nltk.data.path.append(nltkDataPath)
+    nltk.download('punkt', download_dir=nltkDataPath)
+    nltk.download('punkt_tab', download_dir=nltkDataPath)
+
     def __new__(cls):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
@@ -40,7 +54,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage, vectorstore, fileKey):
+    def generateText(self, userSendMessage, vectorstore, fileKey, mainText):
         if vectorstore is None:
             template = """
             너는 사용자를 도와서 논문 요약 및 번역을 하는 어시스턴트야.
@@ -83,10 +97,31 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
 
             # return {"message": output["answer"]}
-            return {"message": rag_chain.invoke(userSendMessage)}
+            return {"generatedText": rag_chain.invoke(userSendMessage)}
 
         else:
-            docs = PyMuPDFLoader(os.path.join(os.getcwd(), "download_pdfs", fileKey)).load()
+            # docs = PyMuPDFLoader(os.path.join(os.getcwd(), "download_pdfs", fileKey)).load()
+
+            sentences = sent_tokenize(mainText)
+
+            # TF-IDF 벡터 생성
+            vectorizer = TfidfVectorizer().fit_transform(sentences)
+            vectors = vectorizer.toarray()
+
+            # 문장 간 유사도 행렬 계산
+            similarityMatrix = cosine_similarity(vectors)
+
+            # 유사도 행렬을 기반으로 그래프 생성
+            nxGraph = nx.from_numpy_array(similarityMatrix)
+            scores = nx.pagerank(nxGraph)
+
+            # 점수에 따라 문장 정렬
+            rankedSentences = sorted(((scores[i], s) for i, s in enumerate(sentences)), reverse=True)
+            top_n = 100
+            rankedText = " ".join([sentence for score, sentence in rankedSentences[:top_n]])
+            print(f"rankedText의 길이 {len(rankedText)}")
+
+            docs = [Document(page_content=rankedText, metadata={})]
 
             prompt_template = """Please summarize the sentence according to the following REQUEST.
             REQUEST:
@@ -112,4 +147,4 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
             output = stuff_chain.invoke({"input_documents": docs})
 
-            return {"message": output["output_text"]}
+            return {"generatedText": output["output_text"]}

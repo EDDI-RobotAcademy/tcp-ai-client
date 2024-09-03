@@ -63,5 +63,5 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         else:
             vectorstore = None
 
-        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, fileKey)
+        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, fileKey, mainText)
 

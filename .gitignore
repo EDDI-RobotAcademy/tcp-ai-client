@@ -320,3 +320,6 @@ nltk_data/
 
 # exclude download_pdfs path
 download_pdfs/
+
+# exclude vectorstore path
+vectorstore/*
