@@ -311,3 +311,15 @@ pyrightconfig.json
 
 # exclude models path
 /models/*
+
+# exclude task_executor
+/task_executor/*
+
+# exclude vectorstore
+/vectorstore/*
+
+# exclude *.pdf
+*.pdf
+
+# exclude *.txt
+*.txt
