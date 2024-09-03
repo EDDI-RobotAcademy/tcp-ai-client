@@ -30,6 +30,12 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         print(f"service -> letsChat() fileKey: {fileKey}")
         mainText = None
 
+        if not os.path.exists(os.path.join(os.getcwd(), "vectorstore")):
+            os.mkdir(os.path.join(os.getcwd(), "vectorstore"))
+
+        if not os.path.exists(os.path.join(os.getcwd(), "download_pdfs")):
+            os.mkdir(os.path.join(os.getcwd(), "download_pdfs"))
+
         if fileKey is not None:
             DOWNLOAD_PATH = "download_pdfs"
             FILE_PATH = os.path.join(os.getcwd(), DOWNLOAD_PATH, fileKey)
@@ -46,11 +52,16 @@ class LlamaThreeServiceImpl(LlamaThreeService):
             documentList = self.__preprocessingRepository.splitTextIntoDocuments(mainText)
             print("finish to split text")
 
-            vectorstore = self.__preprocessingRepository.createFAISS(documentList)
-            print("finish to create FAISS")
-            self.__preprocessingRepository.saveFAISS(vectorstore)
+            dbPath = os.path.join(os.getcwd(), "vectorstore", fileKey.split(".")[0])
+            if os.path.exists(dbPath):
+                vectorstore = self.__preprocessingRepository.loadFAISS(dbPath)
+            else:
+                vectorstore = self.__preprocessingRepository.createFAISS(documentList)
+                print("finish to create FAISS")
+                self.__preprocessingRepository.saveFAISS(vectorstore, dbPath)
 
         else:
-            vectorstore = self.__preprocessingRepository.loadFAISS()
+            vectorstore = None
 
-        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, mainText)
+        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, fileKey)
+

@@ -8,11 +8,10 @@ import pymupdf4llm
 import torch
 
 from dotenv import load_dotenv
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from sentence_transformers import SentenceTransformer
 
 from preprocessing.repository.preprocessing_repository import PreprocessingRepository
 
@@ -159,32 +158,19 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         return documentList
 
     def createFAISS(self, documentList):
-        print("ready to create HuggingFaceEmbeddings!")
-        embeddings = HuggingFaceEmbeddings(
-            model_name=self.EMBEDDING_MODEL_PATH,
-            model_kwargs={"device": self.DEVICE},
-            encode_kwargs={"normalize_embeddings": True}
-        )
-        print(f"success to create HuggingFaceEmbeddings: {embeddings}")
+        embeddings = OpenAIEmbeddings()
 
         vectorstore = FAISS.from_documents(documentList, embeddings)
         print("success to create VectorStore")
 
         return vectorstore
 
-    def saveFAISS(self, vectorstore, savePath="vectorstore/faiss_index"):
-        if not os.path.exists(os.path.join(os.getcwd(), "vectorstore")):
-            os.mkdir(os.path.join(os.getcwd(), "vectorstore"))
+    def saveFAISS(self, vectorstore, dbPath):
+        vectorstore.save_local(dbPath)
 
-        vectorstore.save_local(os.path.join(os.getcwd(), savePath))
-
-    def loadFAISS(self, savePath="vectorstore/faiss_index"):
-        embeddings = HuggingFaceEmbeddings(
-            model_name=self.EMBEDDING_MODEL_PATH,
-            model_kwargs={"device": self.DEVICE},
-            encode_kwargs={"normalize_embeddings": True}
-        )
-        vectorstore = FAISS.load_local(os.path.join(os.getcwd(), savePath),
+    def loadFAISS(self, dbPath):
+        embeddings = OpenAIEmbeddings()
+        vectorstore = FAISS.load_local(dbPath,
                                        embeddings,
                                        allow_dangerous_deserialization=True)
         return vectorstore
