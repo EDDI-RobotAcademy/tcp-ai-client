@@ -105,5 +105,7 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
             model_kwargs={"device": self.DEVICE},
             encode_kwargs={"normalize_embeddings": True}
         )
-        vectorstore = FAISS.load_local(os.path.join(os.getcwd(), savePath), embeddings)
+        vectorstore = FAISS.load_local(os.path.join(os.getcwd(), savePath),
+                                       embeddings,
+                                       allow_dangerous_deserialization=True)
         return vectorstore
