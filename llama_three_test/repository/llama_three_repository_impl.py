@@ -72,7 +72,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         #
         # return { "generatedText": generatedText }
 
-        if context is None:
+        if "요약" not in userSendMessage:
             retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
             retrievedDocs = retriever.get_relevant_documents(userSendMessage)
 
@@ -128,9 +128,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
                 messages=[
                     {"role": "system", "content": systemPrompt},
                     {"role": "user", "content": userSendMessage}
-                ],
-                max_token=512,
-                temperature=0.4
+                ]
             )
 
             generatedText = response['choices'][0]['message']['content']
