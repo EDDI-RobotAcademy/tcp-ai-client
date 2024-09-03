@@ -1,15 +1,18 @@
 import os
 
-import numpy as np
-import torch
 from dotenv import load_dotenv
-from langchain.chains.retrieval_qa.base import RetrievalQA
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
-from langchain_core import documents
-from sympy.physics.units import temperature
-from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModel, pipeline
-from llama_cpp import Llama
+from langchain import hub
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
+from langchain.chains.combine_documents.stuff import StuffDocumentsChain
+from langchain.chains.llm import LLMChain
+from langchain.memory import ConversationSummaryBufferMemory
+from langchain_openai import ChatOpenAI
+from langchain.chains.summarize import load_summarize_chain
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts.chat import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 import openai
 
 from llama_three_test.repository.llama_three_repository import LlamaThreeRepository
@@ -21,18 +24,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     __instance = None
 
-    currentPath = os.getcwd()
-    print(f"currentPath: {currentPath}")
-
-    modelPath = os.path.join(currentPath, "models", "llama-3-Korean-Bllossom-8B-Q4_K_M.gguf")
-
-    tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
-    model = Llama(
-        model_path=modelPath,
-        n_ctx=1024,
-        n_gpu_layers=-1
-    )
-    model.verbose = False  # make model silent
+    llm = ChatOpenAI(temperature=0.3, model_name="gpt-4o-mini")
+    memory = ConversationSummaryBufferMemory(llm=llm, memory_key='chat_history', return_messages=True)
 
     def __new__(cls):
         if cls.__instance is None:
@@ -47,90 +40,75 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
 
         return cls.__instance
 
-    def generateText(self, userSendMessage, vectorstore, context):
-        # messages = [
-        #     { "role": "system", "content": f"{self.systemPrompt}" },
-        #     { "role": "user", "content": f"{userSendMessage}" }
-        # ]
-        #
-        # prompt = self.tokenizer.apply_chat_template(
-        #     messages,
-        #     tokenize=False,
-        #     add_generation_prompt=True
-        # )
-        #
-        # generationKwargs = {
-        #     "max_tokens": 512,
-        #     "stop": ["<|eot_id|>"],
-        #     "top_p": 0.9,
-        #     "temperature": 0.6,
-        #     "echo": True
-        # }
-        #
-        # response = self.model(prompt, **generationKwargs)
-        # generatedText = response['choices'][0]['text'][len(prompt):]
-        #
-        # return { "generatedText": generatedText }
+    def generateText(self, userSendMessage, vectorstore, fileKey):
+        if vectorstore is None:
+            template = """
+            너는 사용자를 도와서 논문 요약 및 번역을 하는 어시스턴트야.
+            사용자의 질문에 알맞은 대답을 해줘야 해.
+            대답은 반드시 한국어로 번역해서 해줘야 해.
+            대답하기 전에 스스로 검증하고 대답해.
+            모르는 내용은 만들어내지말고 모른다고 대답해야 돼.
+            사용자의 질문: {question}
+            """
 
-        if "요약" not in userSendMessage:
-            retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
-            retrievedDocs = retriever.get_relevant_documents(userSendMessage)
-
-            context = " ".join([doc.page_content for doc in retrievedDocs])
-            prompt = f"""
-                당신은 고급 논문 분석 AI 어시스턴트입니다. 주어진 논문과 검색된 관련 문서들을 기반으로 다음과 같은 작업을 수행해야 합니다:
-    
-                **문서와 Context 활용**:
-                - 주어진 Context(검색된 문서들 포함)를 최대한 활용하여 질문에 대답하세요.
-                - 응답에서 추가적인 설명이나 불필요한 정보는 포함하지 마세요.
-                - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
-    
-                **Context**:
-                {context}
-    
-                **질문**: {userSendMessage}
-    
-                **답변**:
-                """
-
-            generationKwargs = {
-                "max_tokens": 512,
-                "top_p": 0.9,
-                "temperature": 0.5,
-                "stop": ["---", "**"],
-            }
-
-            output = self.model(prompt, **generationKwargs)
-
-            return {"generatedText": output['choices'][0]['text'].strip()}
-
-        else:
-            systemPrompt = f"""
-                당신은 고급 논문 요약 AI 어시스턴트입니다. 주어진 논문과 사용자의 질문을 기반으로 다음과 같은 작업을 수행해야 합니다:
-    
-                **논문과 질문 활용**:
-                - 주어진 Context(논문)를 최대한 활용하여 질문에 대답하세요.
-                - 사용자의 질문 내용에 대한 답변이 포함되어야 합니다.
-                - 응답에서 추가적인 설명이나 불필요한 정보, 또는 확인되지 않은 정보는 포함하지 마세요.
-                - 모르는 내용은 모른다고 대답하세요.
-                - 대답하기 전에, 스스로 대답을 검토하고 대답하세요.
-                - 결과적으로, 질문에 대한 직접적이고 간결한 답변만 제공하세요.
-    
-                **Context**:
-                {context}
-    
-                **질문**: {userSendMessage}
-    
-                **답변**:
-                """
-            response = openai.ChatCompletion.create(
-                model="gpt-4o-mini-2024-07-18",
-                messages=[
-                    {"role": "system", "content": systemPrompt},
-                    {"role": "user", "content": userSendMessage}
-                ]
+            prompt_template = PromptTemplate(
+                input_variables=["question"],
+                template=template
             )
 
-            generatedText = response['choices'][0]['message']['content']
+            chain = LLMChain(llm=self.llm, prompt=prompt_template)
+            return {"message": chain.run(userSendMessage)}
 
-            return {"generatedText": generatedText}
+        if "요약" not in userSendMessage:
+            # conversationChain = ConversationalRetrievalChain.from_llm(
+            #     llm=self.llm,
+            #     chain_type="stuff",
+            #     retriever=vectorstore.as_retriever(),
+            #     memory=self.memory
+            # )
+
+            def format_docs(docs):
+                return "\n\n".join([doc.page_content for doc in docs])
+
+            prompt = hub.pull("godk/korean-rag")
+
+            rag_chain = (
+                {"context": vectorstore.as_retriever() | format_docs, "question": RunnablePassthrough()}
+                | prompt
+                | self.llm
+                | StrOutputParser()
+            )
+
+            # output = conversationChain({"question": userSendMessage})
+
+
+            # return {"message": output["answer"]}
+            return {"message": rag_chain.invoke(userSendMessage)}
+
+        else:
+            docs = PyMuPDFLoader(os.path.join(os.getcwd(), "download_pdfs", fileKey)).load()
+
+            prompt_template = """Please summarize the sentence according to the following REQUEST.
+            REQUEST:
+            1. Summarize the main points in bullet points in KOREAN.
+            2. Each summarized sentence must start with an emoji that fits the meaning of the each sentence.
+            3. Use various emojis to make the summary more interesting.
+            4. Translate the summary into Korean if it is written in English.
+            5. DO NOT translate any technical terms.
+            6. DO NOT include any unnecessary information.
+            CONTEXT:
+            {context}
+
+            SUMMARY:"
+            """
+            prompt = PromptTemplate.from_template(prompt_template)
+
+            llm_chain = LLMChain(llm=self.llm, prompt=prompt)
+
+
+            # StuffDocumentsChain 정의
+            stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="context")
+
+            output = stuff_chain.invoke({"input_documents": docs})
+
+            return {"message": output["output_text"]}
