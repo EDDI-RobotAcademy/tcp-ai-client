@@ -28,7 +28,7 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
     if torch.cuda.is_available():
         DEVICE = "cuda"
     elif torch.backends.mps.is_available():
-        DEVICE = "mps"
+        DEVICE = "cpu"
     else:
         DEVICE = "cpu"
 
@@ -64,15 +64,36 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
         downloadedFileName = os.path.join(os.path.join(os.getcwd(), self.DOWNLOAD_PATH), fileKey)
 
         # 파일 다운로드 실행
-        s3.download_file(bucket_name, fileKey, downloadedFileName)
+        # s3.download_file(bucket_name, fileKey, downloadedFileName)
+        try:
+            s3.download_file(bucket_name, fileKey, downloadedFileName)
+            print(f"File downloaded to {downloadedFileName}")
+            if not os.path.isfile(downloadedFileName):
+                print(f"File does not exist after download: {downloadedFileName}")
+                raise FileNotFoundError(f"File {downloadedFileName} not found.")
+        except Exception as e:
+            print(f"Failed to download file: {e}")
+            raise
 
         print(f"File downloaded to {downloadedFileName}")
 
+    # async def extractTextFromPDFToMarkdown(self, PDFPath):
+    #     doc = fitz.open(PDFPath)
+    #     text = pymupdf4llm.to_markdown(doc)
+    #
+    #     return text
     async def extractTextFromPDFToMarkdown(self, PDFPath):
-        doc = fitz.open(PDFPath)
-        text = pymupdf4llm.to_markdown(doc)
+        if not os.path.isfile(PDFPath):
+            print(f"File does not exist: {PDFPath}")
+            return None
 
-        return text
+        try:
+            doc = fitz.open(PDFPath)
+            text = pymupdf4llm.to_markdown(doc)
+            return text
+        except Exception as e:
+            print(f"Failed to extract text from PDF: {e}")
+            raise
 
     async def splitTextIntoDocuments(self, text, chunkSize=256, chunkOverlap=16):
         textSplitter = RecursiveCharacterTextSplitter(chunk_size=chunkSize, chunk_overlap=chunkOverlap)
@@ -92,16 +113,38 @@ class PreprocessingRepositoryImpl(PreprocessingRepository):
                 print(f"Error executing function {func.__name__}: {e}")
                 raise
 
+    # def create_faiss_sync(self, documentList):
+    #     print("Starting create_faiss_sync")
+    #     print(f"device: {self.DEVICE}")
+    #     embeddings = HuggingFaceEmbeddings(
+    #         model_name=self.EMBEDDING_MODEL_PATH,
+    #         model_kwargs={"device": self.DEVICE},
+    #         # encode_kwargs={"normalize_embeddings": True}
+    #     )
+    #     vectorstore = FAISS.from_documents(documentList, embeddings)
+    #     print("Finished create_faiss_sync")
+    #     return vectorstore
+
     def create_faiss_sync(self, documentList):
         print("Starting create_faiss_sync")
-        embeddings = HuggingFaceEmbeddings(
-            model_name=self.EMBEDDING_MODEL_PATH,
-            model_kwargs={"device": self.DEVICE},
-            encode_kwargs={"normalize_embeddings": True}
-        )
-        vectorstore = FAISS.from_documents(documentList, embeddings)
-        print("Finished create_faiss_sync")
-        return vectorstore
+
+        try:
+            # HuggingFaceEmbeddings를 생성합니다.
+            embeddings = HuggingFaceEmbeddings(
+                model_name=self.EMBEDDING_MODEL_PATH,
+                model_kwargs={"device": self.DEVICE},
+                encode_kwargs={"normalize_embeddings": True}
+            )
+
+            # FAISS 인스턴스를 생성합니다.
+            vectorstore = FAISS.from_documents(documentList, embeddings)
+            print("Finished create_faiss_sync")
+            return vectorstore
+
+        except Exception as e:
+            # 예외 발생 시 로그를 출력합니다.
+            print(f"Error during FAISS creation: {e}")
+            raise
 
     async def createFAISS(self, documentList):
         print("Starting createFAISS")

@@ -25,7 +25,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     tokenizer = AutoTokenizer.from_pretrained("MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M")
     model = Llama(
         model_path=modelPath,
-        n_ctx=5000,
+        n_ctx=20000,
         n_gpu_layers=-1
     )
     model.verbose = False  # make model silent
@@ -150,4 +150,4 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
         except Exception as e:
             print(f"Error: {str(e)}")
 
-        return {"generatedText": output['choices'][0]['text'].strip()}
+        return {"message": output['choices'][0]['text'].strip()}
