@@ -134,6 +134,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
             4. Translate the summary into Korean if it is written in English.
             5. DO NOT translate any technical terms.
             6. DO NOT include any unnecessary information.
+            7. The summary must be written in polite and formal Korean (존댓말).
             CONTEXT:
             {context}
 
