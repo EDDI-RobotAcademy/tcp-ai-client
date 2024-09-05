@@ -26,6 +26,7 @@ from llama_three_test.repository.llama_three_repository import LlamaThreeReposit
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+langchain_api_key = os.getenv("LANGCHAIN_API_KEY")
 
 class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     __instance = None
@@ -36,10 +37,9 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
     nltkDataPath = os.path.join(os.getcwd(), 'nltk_data')
     if not os.path.exists(nltkDataPath):
         os.mkdir(nltkDataPath)
-
-    nltk.data.path.append(nltkDataPath)
-    nltk.download('punkt', download_dir=nltkDataPath)
-    nltk.download('punkt_tab', download_dir=nltkDataPath)
+        nltk.data.path.append(nltkDataPath)
+        nltk.download('punkt', download_dir=nltkDataPath)
+        nltk.download('punkt_tab', download_dir=nltkDataPath)
 
     def __new__(cls):
         if cls.__instance is None:
@@ -71,7 +71,7 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
             )
 
             chain = LLMChain(llm=self.llm, prompt=prompt_template)
-            return {"message": chain.run(userSendMessage)}
+            return {"generatedText": chain.run(userSendMessage)}
 
         if "요약" not in userSendMessage:
             # conversationChain = ConversationalRetrievalChain.from_llm(
@@ -84,7 +84,10 @@ class LlamaThreeRepositoryImpl(LlamaThreeRepository):
             def format_docs(docs):
                 return "\n\n".join([doc.page_content for doc in docs])
 
-            prompt = hub.pull("godk/korean-rag")
+            userSendMessage = fileKey.split(".")[0] + " " + userSendMessage
+            print(f"fileKey + userSendMessage: {userSendMessage}")
+
+            prompt = hub.pull("godk/korean-rag", api_key=langchain_api_key)
 
             rag_chain = (
                 {"context": vectorstore.as_retriever() | format_docs, "question": RunnablePassthrough()}
