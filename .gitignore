@@ -323,3 +323,12 @@ download_pdfs/
 
 # exclude vectorstore path
 vectorstore/*
+
+# exclude *.txt file
+*.txt
+
+# exclude *.pdf
+*.pdf
+
+# exclude task_executor
+task_executor/
