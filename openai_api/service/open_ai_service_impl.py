@@ -1,17 +1,17 @@
 import os
 
-from llama_three_test.repository.llama_three_repository_impl import LlamaThreeRepositoryImpl
-from llama_three_test.service.llama_three_service import LlamaThreeService
+from openai_api.repository.openai_api_repository_impl import OpenaiApiRepositoryImpl
+from openai_api.service.open_ai_service import OpenaiApiService
 from preprocessing.repository.preprocessing_repository_impl import PreprocessingRepositoryImpl
 
 
-class LlamaThreeServiceImpl(LlamaThreeService):
+class OpenaiApiServiceImpl(OpenaiApiService):
     __instance = None
 
     def __new__(cls):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
-            cls.__instance.__llamaThreeRepository = LlamaThreeRepositoryImpl.getInstance()
+            cls.__instance.__openaiApiRepository = OpenaiApiRepositoryImpl.getInstance()
             cls.__instance.__preprocessingRepository = PreprocessingRepositoryImpl.getInstance()
 
         return cls.__instance
@@ -64,5 +64,5 @@ class LlamaThreeServiceImpl(LlamaThreeService):
         else:
             vectorstore = None
 
-        return self.__llamaThreeRepository.generateText(userSendMessage, vectorstore, fileKey, mainText)
+        return self.__openaiApiRepository.generateText(userSendMessage, vectorstore, fileKey, mainText)
 
