@@ -21,14 +21,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 from nltk.tokenize import sent_tokenize, word_tokenize
 import openai
 
-from llama_three_test.repository.llama_three_repository import LlamaThreeRepository
+from openai_api.repository.openai_api_repository import OpenaiApiRepository
 
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 langchain_api_key = os.getenv("LANGCHAIN_API_KEY")
 
-class LlamaThreeRepositoryImpl(LlamaThreeRepository):
+class OpenaiApiRepositoryImpl(OpenaiApiRepository):
     __instance = None
 
     llm = ChatOpenAI(temperature=0.3, model_name="gpt-4o-mini")

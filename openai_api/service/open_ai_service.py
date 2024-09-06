@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 
 
-class LlamaThreeService(ABC):
+class OpenaiApiService(ABC):
     @abstractmethod
     def letsChat(self, *arg, **kwargs):
         pass

@@ -1,9 +1,9 @@
 from user_defined_protocol.protocol import UserDefinedProtocolNumber
 
 
-class OpenaiApiTestResponse:
+class OpenaiApiResponse:
     def __init__(self, responseData):
-        self.protocolNumber = UserDefinedProtocolNumber.TCP_TEAM_OPENAI_TEST.value
+        self.protocolNumber = UserDefinedProtocolNumber.OPENAI_API.value
 
         for key, value in responseData.items():
             setattr(self, key, value)
@@ -16,4 +16,4 @@ class OpenaiApiTestResponse:
         return self.__dict__
 
     def __str__(self):
-        return f"OpenaiApiTestResponse({self.__dict__})"
+        return f"OpenaiApiResponse({self.__dict__})"
