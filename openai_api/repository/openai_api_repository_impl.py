@@ -59,9 +59,11 @@ class OpenaiApiRepositoryImpl(OpenaiApiRepository):
             template = """
             너는 사용자를 도와서 논문 요약 및 번역을 하는 어시스턴트야.
             사용자의 질문에 알맞은 대답을 해줘야 해.
-            대답은 반드시 한국어로 번역해서 해줘야 해.
+            Translate the answer into Korean if it is written in English.
             대답하기 전에 스스로 검증하고 대답해.
             모르는 내용은 만들어내지말고 모른다고 대답해야 돼.
+            The answer must be written in polite and formal Korean (존댓말).
+            DO NOT translate any technical terms.
             사용자의 질문: {question}
             """
 
